@@ -1954,9 +1954,12 @@ module lapack
         !
         !dec$ else 
             !
+           !dec$ if (arpack_ > 0)
            call dsaupd ( ido, bmat, n, which, nev, tol, resid, &
                           ncv, v, ldv, iparam, ipntr, workd, workl, &
                           lworkl, info )
+           
+           !dec$ end if
             !
         !dec$ end if
         !
