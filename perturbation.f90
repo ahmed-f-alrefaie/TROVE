@@ -7689,14 +7689,14 @@ module perturbation
           !
           islice = islice + 1
           !
-          allocate(gcor(k1,k2)%me(maxcontr,maxcontr),stat=alloc)
-          call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
-          !
+           !
           ! For fast-ci the N-modes derivativea are aleady combined into one object which is assocaited with k1=1 
-          !
+          !        
           if (job%contrci_me_fast.and.k1>1) then 
-             gcor(k1,k2)%me = 0
-             cycle 
+          	cycle
+          else
+          	allocate(gcor(k1,k2)%me(maxcontr,maxcontr),stat=alloc)
+          	call ArrayStart('grot-gcor-hvib',alloc,1,kind(f_t),rootsize2_)
           endif
           !
           call divided_slice_open(islice,chkptIO_,'g_cor',job%matelem_suffix)
@@ -26834,6 +26834,13 @@ end subroutine read_contr_matelem_expansion_classN
          ! 
          ! Coriolis part of the kinetic operator g_cor
          !
+         if (job%contrci_me_fast) then 
+         	do k2 = 1,3
+         		mat_t = gcor(1,k2)%me(icontr,jcontr)
+         		gcor_t = gcor_t + mat_t*me%rot_contr(k2,icount,jcount,ideg,jdeg)
+         	enddo
+         endif
+         
          do k1 = 1,PT%Nmodes
            !
            do k2 = 1,3
