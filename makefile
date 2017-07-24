@@ -13,8 +13,8 @@ pot_user = pot_ch4
 PLAT = _0605
 ###FOR  = ifort
 FOR = ifort 
-FFLAGS = -ip   -openmp -O3 -static
-
+#FFLAGS = -ip   -openmp -O3 -static
+FFLAGS = -O0 -g
 
 #ARPACK =  ~/libraries/ARPACK/libarpack_omp_64.a
 
@@ -153,6 +153,8 @@ input.o:  input.f90
 diag.o:  diag.f90
 	$(FOR) -c diag.f90 $(FFLAGS)
 
+MatrixCache_module.o: parallel_build/Matrix/MatrixCache_module.f90 accuracy.o
+	$(FOR) -c parallel_build/Matrix/MatrixCache_module.f90 $(FFLAGS)
 
 clean:
 	rm $(OBJ) *.mod trove.o
