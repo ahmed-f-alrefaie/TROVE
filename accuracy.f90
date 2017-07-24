@@ -16,8 +16,10 @@ module accuracy
   integer, parameter :: rk          = selected_real_kind(12,25)  ! "Normal" reals and complex (complexi? :-)
   integer, parameter :: ark         = selected_real_kind(25,32)  ! "Accurate" reals and complex (complexi? :-)
   integer, parameter :: inp         = 5                          ! Output I/O channel
-  integer, parameter :: out         = 6                          ! Output I/O channel
+  integer	     :: out         = 6                          ! Output I/O channel
   integer, parameter :: nfilelegendre = 101                      ! Dump-outout channel for eigenfunction 
+  
+  integer,parameter	     :: standard_output= 6
 
   ! universal constants
   real(drk), parameter :: planck     =  6.62606896e-27             ! Planck constant
@@ -40,6 +42,11 @@ module accuracy
   integer, parameter :: cl          = 80                         ! Max character string length
   integer, parameter :: wl          = 500                       ! Very large max character string length 
   integer, parameter :: fititermax  = 200                        ! Max number of iteratons in different fittings 
+  
+  logical	     :: stdout_set = .false.
+
+  character(len=*), parameter :: stdout_file_name = "trove_log."
+  integer,parameter	     :: mpiint = ik
 
   contains
 
@@ -63,6 +70,44 @@ module accuracy
 
 
     end subroutine accuracyInitialize
+    !> This routine can be called only once. It redirects standard output into the file with name "stdout_file_name"//myrank where // stands for string concatenation and myrank is integer. The idea is
+  !> that the mpi_mod module routine mpi_start redirects the standard output for each process into its own file by calling this routine with the rank of the process as argument.
+  !> See also description of the parameters stdout_unit_base, stdout_unit_step.
+  subroutine redirect_stdout_to_file(myrank,master_stdout)
+     implicit none
+     integer(kind=mpiint), intent(in) :: myrank
+     character(len=wl) :: file_name, num
+     logical,optional,intent(in)	::	master_stdout
+     
+     logical				::	master_stdout_
+     
+     master_stdout_ = .false.
+     if(present(master_stdout)) master_stdout_ = master_stdout
+
+        if (stdout_set) then
+           stop "const/redirect_stdout_to_file: stdout has been set before: stdout can be set only once."
+        else
+           if (out < standard_output) stop "const/redirect_stdout_to_file: on input val < output_unit, where output_unit is the default unit for std. output."
+
+           !We open a file for each process separately where standard output for each process will go.
+           write(num,'(i)') myrank
+           file_name = trim(stdout_file_name)//trim(adjustl(num))
+           
+           if(master_stdout_ == .true. .and. myrank == 0) then
+           	out = 6
+           else
+           	out = stdout_unit_base+myrank*stdout_unit_step
+           	open(unit=out, file=file_name, status="replace")
+           endif
+           !The following commented line can be used to ignore the standard output completely (on unix systems). This may be useful for calculations which use a large number of MPI processes. In that case
+           !I may want to keep output of the master process only and igonore stdout of the rest.
+           !open(unit=stdout, file="/dev/null", status="old")
+
+           stdout_set = .true.
+        endif
+     
+  end subroutine redirect_stdout_to_file
+
 
 end module accuracy
 

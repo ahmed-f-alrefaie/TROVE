@@ -555,6 +555,7 @@ module fields
    use input
    !
    integer(ik),intent(out) :: NPTorder,Npolyads,Nmodes,Jrot
+   
    !
    ! parameters used with the "syevr" diagonalizer  
    !
@@ -620,6 +621,10 @@ module fields
    integer(ik) :: Nbonds,Nangles,Ndihedrals,j,ispecies,imu,iterm,Ncoords,icoords
    character(len=4) :: char_j
                                         ! in the symmetr. diag. routine 
+   character(len=1024)		::	input_filename                                     
+   integer	::			iounit,num_arguments
+                                        
+                                        
    !
    !
    ! default values: 
@@ -714,6 +719,42 @@ module fields
    intensity%freq_window = (/-0.1,1e6/)
    intensity%erange_low = (/-0.1,1e6/)
    intensity%erange_upp = (/-0.1,1e6/)
+   
+   
+   !Read from file if file present
+   
+   num_arguments = COMMAND_ARGUMENT_COUNT()
+		
+		
+   if(num_arguments>1) then
+			write(stdout,"('Only one argument allowed')")
+			write(stdout,"('Command line must be:')")
+			write(stdout,"('./j-trove.x <input filename>')")
+			stop "[OPTIONS::read_input] Wrong arguments defined"
+   endif		
+		
+   if(num_arguments == 1) then
+		
+	call get_command_argument(1,input_filename)
+		
+	input_filename = trim(input_filename)
+		
+	iounit = find_io(1)
+	write(stdout,"('Opening input file in unit = ',i4)") iounit
+		
+	OPEN(io,action = 'read',status='old', file = input_filename,iostat=err)
+
+   	if(err /=0) then
+		write(stdout,"('Error opening input file ',a)") input_filename
+		stop "Could not open input file"
+   	endif
+   else
+	iounit = 5
+   endif
+   
+   
+   
+   
    !
    !
    ! MEP
@@ -734,7 +775,7 @@ module fields
    ! read the general input 
    !
    do
-       call read_line(eof) ; if (eof) exit
+       call read_line(eof,iounit) ; if (eof) exit
        call readu(w)
        select case(w)
        case("STOP","FINISH","END")
@@ -4048,6 +4089,10 @@ module fields
    ! Check if everything defined 
    !
    if (job%verbose>=4) write(out,"('FLReadInput/end')")  
+   
+   !If we read from file then close the unit
+   if(num_arguments == 1) close(iounit)
+   
    !
    contains
    !
